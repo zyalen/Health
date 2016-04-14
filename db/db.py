@@ -6,7 +6,6 @@ sys.path.append("..")
 import random
 import string
 import hashlib
-import MySQLdb
 import numpy
 
 from db_execute import db_execute
@@ -22,19 +21,20 @@ add a new account to database.
         other number indicates success and the number is the id of the new account.
 '''
 def add_account(data):
+  print data
   if GB.ACCOUNT not in data or GB.PASSWORD not in data:
     return -1
 
   salt = ''.join(random.sample(string.ascii_letters, 8))
   sha1_encode = hashlib.sha1()
-  sha1_encode.update(data[GB.PASSWORD]+salt)
+  sha1_encode.update(str(data[GB.PASSWORD])+salt)
   password = sha1_encode.hexdigest()
 
-  sql_account = "insert into account (account, password, salt) values ('%s', '%s', '%s')"
-  sql_user = "insert into user (id, nickname, phone) values (%d, '%s', '%s')"
+  sql_account = "insert into account (account, password, salt) values (%d, '%s', '%s')"
+  sql_user = "insert into user (id, nickname, phone) values (%d, '%s', %d)"
   try:
     insert_id = db_execute.insert(sql_account%(data[GB.ACCOUNT], password, salt))
-    db_execute.insert(sql_user%(insert_id, data[GB.ACCOUNT], data[GB.ACCOUNT]))
+    db_execute.insert(sql_user%(insert_id, str(data[GB.ACCOUNT]), data[GB.ACCOUNT]))
     return insert_id
   except Exception, e:
     print e
@@ -43,35 +43,38 @@ def add_account(data):
 '''
 modify user's information.
 @params a dict data:
-        options include user's name, nickname, gender, age, phone, location,
-        (longitude and latitude), occupation, identity_id.
+        options include user's name, nickname, gender, age, phone
+        gender: 0 male, 1 female
 @return True if successfully modify
         False modification fails.
 '''
 
 def update_user(data):
+  print data
   if GB.ID not in data:
     return False
   result = True
 
   sql = ""
   if GB.NAME in data:
-    data[GB.NAME] = MySQLdb.escape_string(data[GB.NAME].encode("utf8"))
     sql = "update user set name = '%s' where id = %d"
     try:
+      data[GB.NAME] = data[GB.NAME]
       db_execute.execute(sql % (data[GB.NAME], data[GB.ID]))
       result &= True
     except:
       result &= False
+      return result
 
   if GB.NICKNAME in data:
-    data[GB.NICKNAME] = MySQLdb.escape_string(data[GB.NICKNAME].encode("utf8"))
+    print data[GB.NICKNAME]
     sql = "update user set nickname = '%s' where id = %d"
     try:
       db_execute.execute(sql % (data[GB.NICKNAME], data[GB.ID]))
       result &= True
     except:
       result &= False
+      return result
 
   if GB.GENDER in data:
     sql = "update user set gender = %d where id = %d"
@@ -80,6 +83,7 @@ def update_user(data):
       result &= True
     except:
       result &= False
+      return result
 
     if GB.AGE in data:
       sql = "update user set age = %d where id = %d"
@@ -88,8 +92,18 @@ def update_user(data):
         result &= True
       except:
         result &= False
+        return result
 
-    return result
+    if GB.PHONE in data:
+      sql = "update user set phone = %d where id = %d"
+      try:
+        db_execute.execute(sql % (data[GB.PHONE], data[GB.ID]))
+        result &= True
+      except:
+        result &= False
+        return result
+
+  return result
 
 '''
 get salt of an account.
@@ -226,32 +240,28 @@ def update_health(data):
     return False
   sql = ""
   if GB.HEART_RATE in data:
-    data[GB.HEART_RATE] = MySQLdb.escape_string(data[GB.HEART_RATE].encode("utf8"))
-    sql = "update health set heart_rate = '%s' where id = %d"
+    sql = "update health set heart_rate = %d where id = %d"
     try:
       db_execute.execute(sql % (data[GB.HEART_RATE], data[GB.HEALTH_ID]))
       result &= True
     except:
       result &= False
   if GB.STEP_NUM in data:
-    data[GB.STEP_NUM] = MySQLdb.escape_string(data[GB.STEP_NUM].encode("utf8"))
-    sql = "update health set step_num = '%s' where id = %d"
+    sql = "update health set step_num = %d where id = %d"
     try:
       db_execute.execute(sql % (data[GB.STEP_NUM], data[GB.HEALTH_ID]))
       result &= True
     except:
       result &= False
   if GB.BLOOD_PRESSURE in data:
-    data[GB.BLOOD_PRESSURE] = MySQLdb.escape_string(data[GB.BLOOD_PRESSURE].encode("utf8"))
-    sql = "update health set blood_pressure = '%s' where id = %d"
+    sql = "update health set blood_pressure = %d where id = %d"
     try:
       db_execute.execute(sql % (data[GB.BLOOD_PRESSURE], data[GB.HEALTH_ID]))
       result &= True
     except:
       result &= False
   if GB.VISION in data:
-    data[GB.VISION] = MySQLdb.escape_string(data[GB.VISION].encode("utf8"))
-    sql = "update health set vision = '%s' where id = %d"
+    sql = "update health set vision = %f where id = %d"
     try:
       db_execute.execute(sql % (data[GB.VISION], data[GB.HEALTH_ID]))
       result &= True
@@ -331,7 +341,7 @@ get information of item
 @return information of item
 '''
 def get_items_information(data):
-  if data[GB.ITEM_ID] not in data:
+  if GB.ITEM_ID not in data:
     return None
   sql = "select * from items where id = %d"%data[GB.ITEM_ID]
   item_info = None
@@ -355,9 +365,9 @@ get a list of items
 @return a list of items
 '''
 def get_items_list(data):
-  sql = "select id from items"
+  sql = "select id from items order by id"
   item_list = []
-  item_info = None
+  item_info = {}
   try:
     sql_result = db_execute.execute_fetchall(sql)
     for each_result in sql_result:
@@ -366,7 +376,8 @@ def get_items_list(data):
         item_info = get_items_information(item_info)
         if item_info is not None:
           item_list.append(item_info)
-  except:
+  except Exception, e:
+    print e
     pass
   finally:
     return item_list
@@ -383,6 +394,8 @@ def get_suit_items(data):
     return itmes
   sql = "select * from health where health.user_id = %d"%data[GB.USER_ID]
   sql_result = db_execute.execute_fetchall(sql)
+  if sql_result is None:
+    return itmes
   sum = 0
   n = 0
   for each_result in sql_result:
@@ -392,10 +405,10 @@ def get_suit_items(data):
   heart_rate = sum/n
 
   item_sql = "select id from items"
-  if heart_rate > 120:
-    item_sql += "where high_heart_rate = TRUE"
+  if heart_rate > 100:
+    item_sql += " where high_heart_rate = 1"
   elif heart_rate < 60:
-    item_sql += "where low_heart_rate = FALSE"
+    item_sql += " where low_heart_rate = 1"
   item_result = db_execute.execute_fetchall(item_sql)
   for each_result in item_result:
     for each_id in each_result:
@@ -419,15 +432,44 @@ def get_recommand_items(data):
     for each_id in each_result:
       users.append(each_id)
 
-  R = [[0] * len(items)] * len(users)
+  R = [[] for i in range(len(users))]
+  for i in range(len(users)):
+    for j in range(len(items)):
+      R[i].append(0)
+
   reviews_sql = "select * from reviews"
   reviews_result = db_execute.execute_fetchall(reviews_sql)
   for each_result in reviews_result:
-    R[each_result[1]][each_result[2]] = each_result[3]
+    if each_result[1] in users and each_result[2] in items:
+      i = users.index(each_result[1])
+      j = items.index(each_result[2])
+      R[i][j] = each_result[3]
 
-  items_index = numpy.argsort(R)
-  suit_items_id = items_index[users.index(data[GB.USER_ID])][0:4]
+  R = get_recommand.get_recommand(R)
+
+  raw = users.index(data[GB.USER_ID])
+  items_index = numpy.argsort(R)[:, ::-1]
+  items_id = []
+  for i in items_index[raw]:
+    items_id.append(items[i])
+  suit_items_id = items_id[0:4]
+
   suit_items = []
-  for items_id in len(suit_items_id):
-    suit_items.append(get_items_information(items[items_id]))
+  item_data = {}
+  for items_id in suit_items_id:
+    item_data[GB.ITEM_ID] = items_id
+    item_data = get_items_information(item_data)
+    suit_items.append(item_data)
   return suit_items
+
+# test
+def add_items():
+  sql = "insert into items(item_name, price, high_heart_rate, low_heart_rate) VALUES ('%s', %d, %d, %d)"
+  item_name = "item_name_"
+  for i in range(1, 50):
+    sql_result = db_execute.insert(sql%(item_name+str(i), random.randint(10,200), i%2, 1-i%2))
+
+def add_reviews():
+  sql = "insert into reviews(user_id, item_id, customer_reviews) VALUES (%d, %d, %d)"
+  for i in range(1, 50):
+    sql_result = db_execute.insert(sql%((random.randint(5,7)), i, random.randint(1, 5)))

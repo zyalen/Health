@@ -7,7 +7,7 @@ from util import utils
 from util import GB
 from db import db
 
-class Get_Recommand_Handler(RequestHandler):
+class Get_Item_List_Handler(RequestHandler):
   def post(self):
     params = utils.decode_params(self.request)
 

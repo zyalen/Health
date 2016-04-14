@@ -12,6 +12,7 @@ class Get_User_Information_Handler(RequestHandler):
     params = utils.decode_params(self.request)
     resp = {}
     user_info = db.get_user_information(params)
+    resp = user_info
     if user_info is None:
       resp[GB.STATUS] = GB.ERROR
     resp[GB.STATUS] = GB.OK

@@ -16,7 +16,6 @@ class Regist_Handler(RequestHandler):
       resp[GB.STATUS] = GB.OK
       resp[GB.ACCOUNT] = params[GB.ACCOUNT]
       resp[GB.ID] = user_id
-      resp[GB.SALT] = db.get_salt(params)
     else:
       resp[GB.STATUS] = GB.ERROR
 

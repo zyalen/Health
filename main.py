@@ -12,6 +12,8 @@ import sys
 from handle import add_health
 from handle import get_health_report
 from handle import get_health_list
+from handle import get_item_list
+from handle import get_recommand
 from handle import get_user_info
 from handle import login
 from handle import modify_password
@@ -34,7 +36,9 @@ def main():
       (r"/add_health", add_health.Add_Health_Handler),
       (r"/get_health_report", get_health_report.Get_Health_Report_Handler),
       (r"/get_health_list", get_health_list.Get_Health_List_Handler),
-      (r"/get_user_imfo", get_user_info.Get_User_Information_Handler),
+      (r"/get_item_list", get_item_list.Get_Item_List_Handler),
+      (r"/get_recommand", get_recommand.Get_Recommand_Handler),
+      (r"/get_user_info", get_user_info.Get_User_Information_Handler),
       (r"/login", login.Login_Handler),
       (r"/modify_password", modify_password.Modify_Password_Handler),
       (r"/modify_user_info", modify_user_info.Modify_User_Information_Handler),

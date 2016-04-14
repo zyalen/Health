@@ -1,6 +1,6 @@
 import numpy
 
-def matrix_factorisation(R, P, Q, K, steps=5000, alpha=0.0002, beta=0.02):
+def matrix_factorisation(R, P, Q, K, steps=1000, alpha=0.0002, beta=0.02):
   Q = Q.T
   for step in xrange(steps):
     for i in xrange(len(R)):

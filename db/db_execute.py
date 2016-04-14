@@ -40,7 +40,8 @@ class db_execute:
       cursor.execute(sql)
       insert_id = conn.insert_id()
       conn.commit()
-    except:
+    except Exception,e:
+      print e
       insert_id = -1
     finally:
       cursor.close()
